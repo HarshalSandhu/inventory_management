@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.env
+.venv/
+venv/
+receipts/*
+!receipts/.gitkeep
+db_backups/
+*.db
+.backup_*/

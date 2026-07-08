@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <title>ASR Industries — Inventory</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f1f5f9; color: #1e293b; display: flex; min-height: 100vh; }
+    :root { --sidebar: 240px; --primary: #3b82f6; --primary-dark: #2563eb; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --gray-50: #f8fafc; --gray-100: #f1f5f9; --gray-200: #e2e8f0; --gray-300: #cbd5e1; --gray-400: #94a3b8; --gray-500: #64748b; --gray-600: #475569; --gray-700: #334155; --gray-800: #1e293b; --gray-900: #0f172a; }
+
+    /* ─── Sidebar ─── */
+    .sidebar { position: fixed; top: 0; left: 0; width: var(--sidebar); height: 100vh; background: var(--gray-900); color: #fff; display: flex; flex-direction: column; z-index: 100; transition: transform .25s; }
+    .sidebar-brand { padding: 20px 20px 16px; border-bottom: 1px solid rgba(255,255,255,.08); }
+    .sidebar-brand h1 { font-size: 17px; font-weight: 700; letter-spacing: -.3px; }
+    .sidebar-brand span { font-size: 11px; color: var(--gray-400); display: block; margin-top: 2px; }
+    .sidebar-nav { flex: 1; padding: 12px 10px; overflow-y: auto; }
+    .sidebar-nav button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 14px; border: none; background: transparent; color: var(--gray-400); font-size: 14px; font-weight: 500; border-radius: 8px; cursor: pointer; transition: all .15s; text-align: left; }
+    .sidebar-nav button:hover { background: rgba(255,255,255,.06); color: #fff; }
+    .sidebar-nav button.active { background: var(--primary); color: #fff; box-shadow: 0 4px 12px rgba(59,130,246,.35); }
+    .sidebar-nav button svg { width: 20px; height: 20px; flex-shrink: 0; }
+    .sidebar-nav button .badge { margin-left: auto; background: rgba(255,255,255,.15); padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+    .sidebar-nav button.active .badge { background: rgba(255,255,255,.25); }
+    .sidebar-footer { padding: 14px 20px; border-top: 1px solid rgba(255,255,255,.08); font-size: 11px; color: var(--gray-500); }
+
+    /* ─── Main ─── */
+    .main { margin-left: var(--sidebar); flex: 1; min-height: 100vh; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 28px; background: #fff; border-bottom: 1px solid var(--gray-200); position: sticky; top: 0; z-index: 50; }
+    .topbar h2 { font-size: 18px; font-weight: 600; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--gray-500); }
+    .topbar-right .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); display: inline-block; }
+    .container { padding: 24px 28px; max-width: 1500px; }
+
+    /* ─── KPI Cards ─── */
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,.06); border: 1px solid var(--gray-200); transition: box-shadow .2s; }
+    .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+    .card-top { display: flex; align-items: flex-start; justify-content: space-between; }
+    .card-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .card .label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: var(--gray-400); margin-bottom: 2px; }
+    .card .value { font-size: 26px; font-weight: 700; line-height: 1.2; }
+    .card .sub { font-size: 12px; color: var(--gray-500); margin-top: 4px; }
+    .icon-blue { background: #eff6ff; color: var(--primary); }
+    .icon-green { background: #ecfdf5; color: var(--success); }
+    .icon-orange { background: #fff7ed; color: var(--warning); }
+    .icon-purple { background: #f5f3ff; color: #8b5cf6; }
+
+    /* ─── Sections & Tabs ─── */
+    .section { display: none; animation: fadeIn .2s; }
+    .section.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ─── Action Bar ─── */
+    .action-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .action-bar .spacer { flex: 1; }
+    .action-bar input, .action-bar select { padding: 7px 12px; border: 1px solid var(--gray-300); border-radius: 8px; font-size: 13px; background: #fff; color: var(--gray-700); outline: none; transition: border .15s; }
+    .action-bar input:focus, .action-bar select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
+
+    /* ─── Tables ─── */
+    .table-wrap { background: #fff; border-radius: 12px; border: 1px solid var(--gray-200); overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { padding: 11px 14px; text-align: left; font-weight: 600; color: var(--gray-500); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; background: var(--gray-50); border-bottom: 1px solid var(--gray-200); white-space: nowrap; }
+    td { padding: 11px 14px; border-bottom: 1px solid var(--gray-100); color: var(--gray-700); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--gray-50); }
+    .table-wrap + .table-wrap { margin-top: 16px; }
+
+    /* ─── Badges ─── */
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-blue { background: #dbeafe; color: #1e40af; }
+    .badge-yellow { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-gray { background: #f1f5f9; color: #475569; }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+    .badge-green .badge-dot { background: #16a34a; }
+    .badge-blue .badge-dot { background: #2563eb; }
+    .badge-yellow .badge-dot { background: #d97706; }
+    .badge-red .badge-dot { background: #dc2626; }
+
+    /* ─── Buttons ─── */
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 16px; border-radius: 8px; border: none; font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; text-decoration: none; white-space: nowrap; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); box-shadow: 0 2px 8px rgba(59,130,246,.3); }
+    .btn-outline { background: transparent; color: var(--gray-600); border: 1px solid var(--gray-300); }
+    .btn-outline:hover { background: var(--gray-50); border-color: var(--gray-400); }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-success:hover { background: #059669; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 6px; }
+    .btn-xs { padding: 3px 8px; font-size: 11px; border-radius: 5px; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+    .btn svg { width: 16px; height: 16px; }
+
+    /* ─── Modals ─── */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,.5); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(2px); }
+    .modal-overlay.open { display: flex; }
+    .modal { background: #fff; border-radius: 14px; padding: 28px; width: 540px; max-width: 92vw; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.2); animation: modalIn .2s; }
+    @keyframes modalIn { from { opacity: 0; transform: scale(.96) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+    .modal h2 { font-size: 17px; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+    .modal label { display: block; font-size: 12px; font-weight: 600; color: var(--gray-600); margin: 14px 0 4px; text-transform: uppercase; letter-spacing: .3px; }
+    .modal input, .modal select, .modal textarea { width: 100%; padding: 8px 12px; border: 1px solid var(--gray-300); border-radius: 8px; font-size: 14px; outline: none; transition: border .15s; background: #fff; color: var(--gray-800); }
+    .modal input:focus, .modal select:focus, .modal textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
+    .modal input.error, .modal select.error { border-color: var(--danger); }
+    .modal .form-row { display: flex; gap: 12px; }
+    .modal .form-row > * { flex: 1; }
+    .modal .btn-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
+    .modal textarea { min-height: 56px; resize: vertical; }
+    .modal .hint { font-size: 11px; color: var(--gray-400); margin-top: 3px; }
+    .modal h3 { font-size: 13px; font-weight: 600; margin: 18px 0 10px; color: var(--gray-700); }
+    .field-error { font-size: 11px; color: var(--danger); margin-top: 2px; display: none; }
+    .field-error.show { display: block; }
+
+    /* ─── Stock Progress Bar ─── */
+    .stock-cell { display: flex; align-items: center; gap: 8px; }
+    .stock-bar { flex: 1; height: 6px; background: var(--gray-200); border-radius: 3px; overflow: hidden; max-width: 80px; }
+    .stock-bar-fill { height: 100%; border-radius: 3px; transition: width .3s; }
+    .stock-bar-fill.green { background: var(--success); }
+    .stock-bar-fill.yellow { background: var(--warning); }
+    .stock-bar-fill.red { background: var(--danger); }
+
+    /* ─── Charts ─── */
+    .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    .chart-box { background: #fff; border-radius: 12px; padding: 20px; border: 1px solid var(--gray-200); box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+    .chart-box h3 { font-size: 13px; font-weight: 600; color: var(--gray-600); margin-bottom: 14px; }
+
+    /* ─── Empty State ─── */
+    .empty { text-align: center; padding: 40px 20px; color: var(--gray-400); font-size: 13px; }
+    .empty svg { width: 40px; height: 40px; margin-bottom: 10px; opacity: .5; }
+
+    /* ─── Loading Shimmer ─── */
+    .shimmer { background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-50) 50%, var(--gray-100) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px; }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    .shimmer-row { display: flex; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--gray-100); }
+    .shimmer-row .shimmer { height: 14px; flex: 1; }
+    .shimmer-row .shimmer:first-child { max-width: 80px; }
+    .shimmer-row .shimmer:nth-child(2) { flex: 2; }
+
+    /* ─── Toast ─── */
+    .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 2000; display: flex; flex-direction: column; gap: 8px; }
+    .toast { display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-radius: 10px; font-size: 13px; font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,.15); animation: toastIn .25s; min-width: 280px; max-width: 420px; }
+    @keyframes toastIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+    .toast-success { background: #065f46; color: #fff; }
+    .toast-error { background: #7f1d1d; color: #fff; }
+    .toast-info { background: #1e3a5f; color: #fff; }
+    .toast svg { width: 18px; height: 18px; flex-shrink: 0; }
+    .toast-close { margin-left: auto; background: none; border: none; color: inherit; opacity: .6; cursor: pointer; padding: 2px; font-size: 16px; line-height: 1; }
+
+    /* ─── Misc ─── */
+    .text-muted { color: var(--gray-500); font-size: 12px; }
+    .fw-600 { font-weight: 600; }
+    .gap-4 { gap: 4px; }
+    .flex { display: flex; align-items: center; }
+    .mt-16 { margin-top: 16px; }
+    .mb-16 { margin-bottom: 16px; }
+    .report-detail .cards { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); margin-bottom: 16px; }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 900px) { .chart-row { grid-template-columns: 1fr; } }
+    @media (max-width: 768px) {
+      :root { --sidebar: 0px; }
+      .sidebar { transform: translateX(-100%); width: 260px; }
+      .sidebar.open { transform: translateX(0); }
+      .main { margin-left: 0; }
+      .topbar { padding: 12px 16px; }
+      .container { padding: 16px; }
+      .menu-toggle { display: flex !important; }
+      .cards { grid-template-columns: repeat(2, 1fr); }
+    }
+    .menu-toggle { display: none; background: none; border: none; padding: 6px; cursor: pointer; color: var(--gray-600); }
+    .sidebar-backdrop { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.4); z-index: 99; }
+    .sidebar-backdrop.show { display: block; }
+    @media (max-width: 768px) { .sidebar-backdrop.show { display: block; } }
+
+    /* ─── Checkbox field ─── */
+    .checkbox-row { display: flex; align-items: center; gap: 8px; margin: 14px 0 4px; }
+    .checkbox-row input[type="checkbox"] { width: auto; accent-color: var(--danger); }
+    .checkbox-row label { margin: 0; text-transform: none; font-size: 13px; font-weight: 500; color: var(--gray-700); letter-spacing: 0; }
+
+    /* ─── Alert banner ─── */
+    .alert-banner { background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; }
+    .alert-banner-head { display: flex; align-items: center; gap: 8px; font-weight: 600; color: #991b1b; font-size: 14px; margin-bottom: 10px; }
+    .alert-banner-head svg { width: 18px; height: 18px; flex-shrink: 0; }
+    .alert-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid #fecaca; font-size: 13px; }
+    .alert-item:first-of-type { border-top: none; }
+    .alert-item .name { color: #7f1d1d; font-weight: 500; }
+    .alert-item .stock { color: #991b1b; font-size: 12px; }
+
+    /* ─── Login screen ─── */
+    .login-overlay { position: fixed; inset: 0; background: var(--gray-900); z-index: 3000; display: none; align-items: center; justify-content: center; }
+    .login-overlay.show { display: flex; }
+    .login-card { background: #fff; border-radius: 16px; padding: 36px; width: 360px; max-width: 90vw; box-shadow: 0 20px 60px rgba(0,0,0,.3); text-align: center; }
+    .login-card h1 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .login-card p { font-size: 12px; color: var(--gray-500); margin-bottom: 20px; }
+    .login-card input { width: 100%; padding: 10px 12px; border: 1px solid var(--gray-300); border-radius: 8px; font-size: 14px; outline: none; margin-bottom: 12px; text-align: center; }
+    .login-card input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
+    .login-card .btn { width: 100%; justify-content: center; }
+    .login-error { color: var(--danger); font-size: 12px; margin-bottom: 10px; display: none; }
+    .login-error.show { display: block; }
+  </style>
+</head>
+<body>
+
+  <!-- ─── Sidebar ─── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <h1>ASR Industries</h1>
+      <span>Inventory Management</span>
+    </div>
+    <nav class="sidebar-nav" id="sidebarNav">
+      <button class="active" data-tab="overview">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        Overview
+      </button>
+      <button data-tab="products">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+        Products
+      </button>
+      <button data-tab="inventory">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+        Inventory
+      </button>
+      <button data-tab="vendor">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        Vendor Jobs
+      </button>
+      <button data-tab="reorders">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m-10 0a2 2 0 100 4 2 2 0 000-4zm10 0a2 2 0 100 4 2 2 0 000-4z"/></svg>
+        Reorders
+        <span class="badge" id="reorderBadge" style="display:none"></span>
+      </button>
+      <button data-tab="orders">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+        B2B Orders
+      </button>
+      <button data-tab="reports">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Reports
+      </button>
+    </nav>
+    <div class="sidebar-footer">v1.0 &middot; ASR Industries</div>
+  </aside>
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+  <!-- ─── Main ─── -->
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="menu-toggle" id="menuToggle" onclick="toggleSidebar()">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="24" height="24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <h2 id="pageTitle">Overview</h2>
+      </div>
+      <div class="topbar-right">
+        <span class="dot"></span> Live
+        <span id="clock"></span>
+        <button class="btn btn-outline btn-xs" onclick="logout()">Logout</button>
+      </div>
+    </div>
+    <div class="container">
+
+      <!-- ─── Overview ─── -->
+      <div class="section active" id="section-overview">
+        <div id="alertBanner"></div>
+        <div class="cards" id="kpiCards"></div>
+        <div class="chart-row">
+          <div class="chart-box"><h3>Stock Value by Category</h3><canvas id="chartCategory"></canvas></div>
+          <div class="chart-box"><h3>Order Status Distribution</h3><canvas id="chartOrders"></canvas></div>
+        </div>
+        <div class="chart-box"><h3>All Products</h3><div class="table-wrap"><table id="overviewProductTable"><thead><tr><th>SKU</th><th>Name</th><th>Category</th><th>Unit</th><th>Stock</th><th>Price</th><th>Value</th></tr></thead><tbody></tbody></table></div></div>
+        <div class="chart-box mt-16"><h3>Recent Transactions</h3><div class="table-wrap"><table id="recentTxTable"><thead><tr><th>Product</th><th>Type</th><th>Qty</th><th>Reference</th><th>Date</th></tr></thead><tbody></tbody></table></div></div>
+        <div class="chart-box mt-16"><h3>Recent Orders</h3><div class="table-wrap"><table id="recentOrderTable"><thead><tr><th>Customer</th><th>Status</th><th>Amount</th><th>Date</th></tr></thead><tbody></tbody></table></div></div>
+      </div>
+
+      <!-- ─── Products ─── -->
+      <div class="section" id="section-products">
+        <div class="action-bar">
+          <button class="btn btn-primary btn-sm" onclick="openAddProductModal()"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg> Add Product</button>
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('excelInput').click()"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg> Upload Excel</button>
+          <input type="file" id="excelInput" accept=".xlsx,.xls" style="display:none" onchange="uploadExcel(event)">
+          <span class="spacer"></span>
+          <select id="productCategoryFilter" onchange="renderProducts()"><option value="">All Categories</option></select>
+          <input type="text" id="productSearch" placeholder="Search name or SKU..." oninput="renderProducts()">
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>SKU</th><th>Name</th><th>Category</th><th>Unit</th><th>Stock</th><th>Price</th><th>Value</th><th>Actions</th></tr></thead><tbody id="productTableBody"></tbody></table></div>
+      </div>
+
+      <!-- ─── Reorders ─── -->
+      <div class="section" id="section-reorders">
+        <div class="action-bar">
+          <button class="btn btn-primary btn-sm" onclick="openReorderModal()"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg> New Reorder Request</button>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Product</th><th>Supplier</th><th>Qty</th><th>Status</th><th>Date</th><th>Receipt</th><th>Actions</th></tr></thead><tbody id="reorderTableBody"></tbody></table></div>
+      </div>
+
+      <!-- ─── Inventory ─── -->
+      <div class="section" id="section-inventory">
+        <div class="action-bar">
+          <button class="btn btn-primary btn-sm" onclick="openModal('adjustModal')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg> Adjust Stock</button>
+          <span class="spacer"></span>
+          <select id="txFilterProduct" onchange="renderTransactions()"><option value="">All Products</option></select>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Product</th><th>Type</th><th>Qty</th><th>Ref Type</th><th>Ref ID</th><th>Date</th><th>Receipt</th></tr></thead><tbody id="txTableBody"></tbody></table></div>
+      </div>
+
+      <!-- ─── Vendor Jobs ─── -->
+      <div class="section" id="section-vendor">
+        <div class="action-bar">
+          <button class="btn btn-primary btn-sm" onclick="openModal('vendorIssueModal')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg> Issue to Vendor</button>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Vendor</th><th>Issued (Raw)</th><th>Received (Finished)</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody id="vendorTableBody"></tbody></table></div>
+      </div>
+
+      <!-- ─── B2B Orders ─── -->
+      <div class="section" id="section-orders">
+        <div class="action-bar">
+          <button class="btn btn-primary btn-sm" onclick="openModal('orderModal')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg> New Order</button>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody id="orderTableBody"></tbody></table></div>
+      </div>
+
+      <!-- ─── Reports ─── -->
+      <div class="section" id="section-reports">
+        <div class="action-bar">
+          <button class="btn btn-primary btn-sm" id="dayEndBtn" onclick="dayEnd()"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> End Day & Generate Report</button>
+          <button class="btn btn-outline btn-sm" onclick="showTodayPreview()"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg> Preview Today</button>
+          <span class="spacer"></span>
+          <span id="reportStatus" style="font-size:13px;color:var(--gray-400)"></span>
+        </div>
+        <div id="todayPreview" style="display:none;margin-bottom:16px"><div class="chart-box"><h3>Today's Preview</h3><div id="todayPreviewContent"></div></div></div>
+        <div class="table-wrap"><table><thead><tr><th>Date</th><th>Products Added</th><th>Stock In</th><th>Stock Out</th><th>Orders</th><th>Vendor Jobs</th><th>Items</th><th>Actions</th></tr></thead><tbody id="reportTableBody"></tbody></table></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ─── Toast Container ─── -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ─── Modals ─── -->
+
+  <!-- Product Modal -->
+  <div class="modal-overlay" id="productModal">
+    <div class="modal">
+      <h2><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="20" height="20"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg> Add Product</h2>
+      <label>SKU <span class="text-muted">*</span></label><input id="pSku" oninput="clearError('pSku')">
+      <div class="field-error" id="err-pSku">SKU is required</div>
+      <label>Product Name <span class="text-muted">*</span></label><input id="pName" oninput="clearError('pName')">
+      <div class="field-error" id="err-pName">Name is required</div>
+      <div class="form-row">
+        <div><label>Category</label><input id="pCategory" placeholder="e.g. Raw Material"></div>
+        <div><label>Unit</label><input id="pUnit" placeholder="e.g. kg, pcs"></div>
+      </div>
+      <div class="form-row">
+        <div><label>Opening Stock</label><input id="pStock" type="number" step="0.01" min="0" value="0"></div>
+        <div><label>Unit Price</label><input id="pPrice" type="number" step="0.01" min="0" value="0"></div>
+      </div>
+      <label>Reorder Threshold <span class="text-muted">(optional)</span></label>
+      <input id="pThreshold" type="number" step="0.01" min="0" placeholder="Alert when stock falls to or below this">
+      <div class="hint">Leave blank to disable low-stock alerts for this product.</div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="pCritical">
+        <label for="pCritical">Mark as Critical (very important item)</label>
+      </div>
+      <div class="hint" style="margin-top:-2px">Critical items below their threshold trigger banner alerts and notifications.</div>
+      <div class="btn-row"><button class="btn btn-outline" onclick="closeModal('productModal')">Cancel</button><button class="btn btn-primary" onclick="createProduct(this)">Save</button></div>
+    </div>
+  </div>
+
+  <!-- Stock Adjust Modal -->
+  <div class="modal-overlay" id="adjustModal">
+    <div class="modal">
+      <h2><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="20" height="20"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg> Adjust Stock</h2>
+      <label>Product <span class="text-muted">*</span></label><select id="aProduct"></select>
+      <div class="form-row">
+        <div><label>Type</label><select id="aType"><option value="IN">IN — Add Stock</option><option value="OUT">OUT — Remove Stock</option></select></div>
+        <div><label>Quantity <span class="text-muted">*</span></label><input id="aQty" type="number" step="0.01" min="0.01" oninput="clearError('aQty')"></div>
+      </div>
+      <div class="field-error" id="err-aQty">Quantity is required</div>
+      <label>Notes</label><textarea id="aNotes" placeholder="Reason for adjustment..."></textarea>
+      <label>Receipt <span class="text-muted">(optional)</span></label><input id="aReceipt" type="file" class="file-input">
+      <div class="btn-row"><button class="btn btn-outline" onclick="closeModal('adjustModal')">Cancel</button><button class="btn btn-primary" onclick="adjustStock(this)">Save</button></div>
+    </div>
+  </div>
+
+  <!-- Vendor Issue Modal -->
+  <div class="modal-overlay" id="vendorIssueModal">
+    <div class="modal">
+      <h2><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="20" height="20"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg> Issue Material to Vendor</h2>
+      <label>Vendor Name <span class="text-muted">*</span></label><input id="viVendorName" placeholder="e.g. Rana Fabrication" oninput="clearError('viVendorName')">
+      <div class="field-error" id="err-viVendorName">Vendor name is required</div>
+      <label>Notes</label><textarea id="viNotes" placeholder="Job details, expected return date..."></textarea>
+      <h3>Raw Materials to Issue</h3>
+      <div id="viItemsContainer"><div class="vi-row" style="display:flex;gap:8px;margin-bottom:8px"><select class="vi-product" style="flex:2;padding:7px 10px;border:1px solid var(--gray-300);border-radius:8px;font-size:13px"></select><input class="vi-qty" type="number" step="0.01" min="0.01" placeholder="Qty" style="flex:1;padding:7px 10px;border:1px solid var(--gray-300);border-radius:8px;font-size:13px"></div></div>
+      <button class="btn btn-outline btn-sm" onclick="addViRow()" style="margin-top:2px">+ Add Another Material</button>
+      <div class="btn-row"><button class="btn btn-outline" onclick="closeModal('vendorIssueModal')">Cancel</button><button class="btn btn-primary" onclick="vendorIssue(this)">Issue to Vendor</button></div>
+    </div>
+  </div>
+
+  <!-- Vendor Receive Modal -->
+  <div class="modal-overlay" id="vendorReceiveModal">
+    <div class="modal">
+      <h2><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="20" height="20"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l3-3m0 0l3 3m-3-3v12"/></svg> Receive from Vendor</h2>
+      <p style="margin-bottom:14px;font-size:13px;color:var(--gray-500)" id="vrJobInfo"></p>
+      <label>Finished Product <span class="text-muted">*</span></label><select id="vrProduct"></select>
+      <label>Quantity Received <span class="text-muted">*</span></label><input id="vrQty" type="number" step="0.01" min="0.01">
+      <label>Receipt <span class="text-muted">(optional)</span></label><input id="vrReceipt" type="file" class="file-input">
+      <div class="btn-row"><button class="btn btn-outline" onclick="closeModal('vendorReceiveModal')">Cancel</button><button class="btn btn-primary" onclick="vendorReceive(this)">Receive</button></div>
+    </div>
+  </div>
+
+  <!-- Dispatch Modal -->
+  <div class="modal-overlay" id="dispatchModal">
+    <div class="modal">
+      <h2><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="20" height="20"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Dispatch Order</h2>
+      <p style="margin-bottom:14px;font-size:13px;color:var(--gray-500)" id="dispatchInfo"></p>
+      <label>Receipt <span class="text-muted">(optional)</span></label><input id="dispatchReceipt" type="file" class="file-input">
+      <div class="btn-row"><button class="btn btn-outline" onclick="closeModal('dispatchModal')">Cancel</button><button class="btn btn-primary" onclick="doDispatch(this)">Dispatch</button></div>
+    </div>
+  </div>
+
+  <!-- Order Modal -->
+  <div class="modal-overlay" id="orderModal">
+    <div class="modal">
+      <h2><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="20" height="20"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg> New B2B Order</h2>
+      <div class="form-row">
+        <div><label>Customer Name <span class="text-muted">*</span></label><input id="oCustName" oninput="clearError('oCustName')"></div>
+        <div><label>Customer Phone</label><input id="oCustPhone" placeholder="Optional"></div>
+      </div>
+      <div class="field-error" id="err-oCustName">Customer name is required</div>
+      <label>Notes</label><textarea id="oNotes" placeholder="Order notes, PO number..."></textarea>
+      <h3>Order Items</h3>
+      <div id="orderItemsContainer"><div class="order-item-row" style="display:flex;gap:8px;margin-bottom:8px"><select class="oi-product" style="flex:2;padding:7px 10px;border:1px solid var(--gray-300);border-radius:8px;font-size:13px"></select><input class="oi-qty" type="number" step="0.01" min="0.01" placeholder="Qty" style="flex:1;padding:7px 10px;border:1px solid var(--gray-300);border-radius:8px;font-size:13px"><input class="oi-price" type="number" step="0.01" min="0" placeholder="Unit Price" style="flex:1;padding:7px 10px;border:1px solid var(--gray-300);border-radius:8px;font-size:13px"></div></div>
+      <button class="btn btn-outline btn-sm" onclick="addOrderItemRow()">+ Add Another Item</button>
+      <div class="btn-row"><button class="btn btn-outline" onclick="closeModal('orderModal')">Cancel</button><button class="btn btn-primary" onclick="createOrder(this)">Create Order</button></div>
+    </div>
+  </div>
+
+  <!-- Reorder Request Modal -->
+  <div class="modal-overlay" id="reorderModal">
+    <div class="modal">
+      <h2><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="20" height="20"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m-10 0a2 2 0 100 4 2 2 0 000-4zm10 0a2 2 0 100 4 2 2 0 000-4z"/></svg> Send Reorder Request</h2>
+      <label>Product <span class="text-muted">*</span></label><select id="roProduct" onchange="clearError('roProduct')"></select>
+      <div class="field-error" id="err-roProduct">Select a product</div>
+      <div class="form-row">
+        <div><label>Quantity <span class="text-muted">*</span></label><input id="roQty" type="number" step="0.01" min="0.01" oninput="clearError('roQty')"></div>
+        <div><label>Supplier</label><input id="roSupplier" placeholder="Optional"></div>
+      </div>
+      <div class="field-error" id="err-roQty">Quantity is required</div>
+      <label>Notes</label><textarea id="roNotes" placeholder="Order details..."></textarea>
+      <div class="btn-row"><button class="btn btn-outline" onclick="closeModal('reorderModal')">Cancel</button><button class="btn btn-primary" onclick="sendReorder(this)">Send Request</button></div>
+    </div>
+  </div>
+
+  <!-- Receive Reorder Modal -->
+  <div class="modal-overlay" id="receiveReorderModal">
+    <div class="modal">
+      <h2><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="20" height="20"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l3-3m0 0l3 3m-3-3v12"/></svg> Receive Reorder</h2>
+      <p style="margin-bottom:14px;font-size:13px;color:var(--gray-500)" id="receiveReorderInfo"></p>
+      <label>Quantity Received <span class="text-muted">*</span></label><input id="rrQty" type="number" step="0.01" min="0.01">
+      <label>Receipt <span class="text-muted">(optional)</span></label><input id="rrReceipt" type="file" class="file-input">
+      <div class="btn-row"><button class="btn btn-outline" onclick="closeModal('receiveReorderModal')">Cancel</button><button class="btn btn-primary" onclick="receiveReorderSubmit(this)">Receive</button></div>
+    </div>
+  </div>
+
+  <!-- ─── Login Overlay ─── -->
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-card">
+      <h1>ASR Industries</h1>
+      <p>Admin login required</p>
+      <div class="login-error" id="loginError">Incorrect password</div>
+      <input type="password" id="loginPassword" placeholder="Admin password" onkeydown="if(event.key==='Enter') doLogin(this.nextElementSibling)">
+      <button class="btn btn-primary" onclick="doLogin(this)">Login</button>
+    </div>
+  </div>
+
+  <script>
+    const API = '/api';
+    let products = [], transactions = [], vendorJobs = [], orders = [], reports = [], reorders = [];
+    let notifiedCriticalIds = new Set();
+
+    // ─── Currency formatting (consistent 2-decimal display everywhere) ───
+    function money(n) { return (n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+    // ─── Toast System ───
+    function toast(msg, type = 'info') {
+      const c = document.getElementById('toastContainer');
+      const icons = { success: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>', error: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>', info: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' };
+      const el = document.createElement('div');
+      el.className = `toast toast-${type}`;
+      el.innerHTML = icons[type] + `<span>${msg}</span><button class="toast-close" onclick="this.parentElement.remove()">×</button>`;
+      c.appendChild(el);
+      setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; setTimeout(() => el.remove(), 300); }, 4000);
+    }
+
+    // ─── API helper ───
+    let sessionExpiredNotified = false;
+    async function api(url, opts = {}) {
+      const res = await fetch(API + url, { headers: { 'Accept': 'application/json' }, ...opts });
+      if (res.status === 401 && url !== '/auth/login') {
+        stopPolling();
+        showLogin();
+        if (!sessionExpiredNotified) { sessionExpiredNotified = true; toast('Session expired — please log in again', 'error'); }
+        throw { detail: 'Not authenticated' };
+      }
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({detail:res.statusText}));
+        if (url !== '/auth/login') toast(e.detail || 'Error', 'error');
+        throw e;
+      }
+      return res.json();
+    }
+
+    // ─── Auth ───
+    function showLogin() { document.getElementById('loginOverlay').classList.add('show'); }
+    function hideLogin() { document.getElementById('loginOverlay').classList.remove('show'); document.getElementById('loginError').classList.remove('show'); }
+
+    async function doLogin(btn) {
+      const pwd = document.getElementById('loginPassword').value;
+      if (!pwd) return;
+      await runOnce(btn, async () => {
+        try {
+          await api('/auth/login', {
+            method: 'POST', body: JSON.stringify({ password: pwd }),
+            headers: { 'Content-Type': 'application/json' },
+          });
+          document.getElementById('loginPassword').value = '';
+          hideLogin();
+          sessionExpiredNotified = false;
+          loadAll(); loadReports(); startPolling();
+        } catch (e) {
+          document.getElementById('loginError').classList.add('show');
+        }
+      });
+    }
+
+    async function logout() {
+      stopPolling();
+      try { await fetch(API + '/auth/logout', { method: 'POST' }); } catch (e) {}
+      showLogin();
+    }
+
+    async function checkAuthAndInit() {
+      try {
+        const res = await fetch(API + '/auth/status');
+        const data = await res.json();
+        if (data.authenticated) {
+          hideLogin();
+          loadAll(); loadReports(); startPolling();
+        } else {
+          showLogin();
+        }
+      } catch (e) {
+        showLogin();
+      }
+    }
+
+    // ─── Sidebar ───
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('open');
+      document.getElementById('sidebarBackdrop').classList.toggle('show');
+    }
+    document.getElementById('sidebarBackdrop').addEventListener('click', toggleSidebar);
+
+    const pageTitles = { overview:'Overview', products:'Products', inventory:'Inventory Transactions', vendor:'Vendor Job Work', reorders:'Reorder Requests', orders:'B2B Orders', reports:'Daily Reports' };
+    document.querySelectorAll('.sidebar-nav button').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        document.querySelectorAll('.sidebar-nav button').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        btn.classList.add('active');
+        const tab = btn.dataset.tab;
+        document.getElementById('section-' + tab).classList.add('active');
+        document.getElementById('pageTitle').textContent = pageTitles[tab] || tab;
+        if (window.innerWidth <= 768) { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarBackdrop').classList.remove('show'); }
+        if (tab === 'products') renderProducts();
+        else if (tab === 'inventory') { populateSelects(); await loadAll(); }
+        else if (tab === 'vendor') renderVendorJobs();
+        else if (tab === 'reorders') renderReorders();
+        else if (tab === 'orders') renderOrders();
+        else if (tab === 'reports') await loadReports();
+      });
+    });
+
+    // ─── Modal ───
+    function openModal(id) { document.getElementById(id).classList.add('open'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+    document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }));
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open')); });
+
+    function showError(fieldId) { const el = document.getElementById('err-' + fieldId); if (el) el.classList.add('show'); }
+    function clearError(fieldId) { const el = document.getElementById('err-' + fieldId); if (el) el.classList.remove('show'); }
+    function markError(fieldId) { const el = document.getElementById(fieldId); if (el) el.classList.add('error'); }
+    function unmarkError(fieldId) { const el = document.getElementById(fieldId); if (el) el.classList.remove('error'); }
+
+    // ─── Clock ───
+    function updateClock() {
+      document.getElementById('clock').textContent = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+    }
+    setInterval(updateClock, 10000);
+    updateClock();
+
+    // ─── Loading shimmer ───
+    function showLoading(tableBodyId, cols) {
+      document.getElementById(tableBodyId).innerHTML = Array(4).fill(0).map(() =>
+        '<tr>' + Array(cols).fill(0).map(() => '<td><div class="shimmer" style="height:14px;width:100%"></div></td>').join('') + '</tr>'
+      ).join('');
+    }
+
+    // ─── Load all data ───
+    // The transactions list can grow large, so it's only fetched on first load
+    // or while the Inventory tab is actually visible — background refreshes on
+    // other tabs skip it since nothing on those tabs reads from it.
+    async function loadAll() {
+      try {
+        const inventoryActive = document.getElementById('section-inventory').classList.contains('active');
+        const needsTx = inventoryActive || transactions.length === 0;
+        showLoading('overviewProductTable', 7);
+        showLoading('productTableBody', 8);
+        if (needsTx) showLoading('txTableBody', 7);
+        showLoading('vendorTableBody', 6);
+        showLoading('orderTableBody', 6);
+        const [prods, txs, vjs, ords, ros, summary] = await Promise.all([
+          api('/products'),
+          needsTx ? api('/inventory/transactions?limit=500') : Promise.resolve(transactions),
+          api('/vendor/jobs'), api('/b2b/orders'), api('/reorder'), api('/dashboard/summary')
+        ]);
+        products = prods; transactions = txs; vendorJobs = vjs; orders = ords; reorders = ros;
+        renderDashboard(summary);
+        populateSelects();
+        updateAlerts();
+        if (document.getElementById('section-products').classList.contains('active')) renderProducts();
+        if (inventoryActive) renderTransactions();
+        renderVendorJobs();
+        if (document.getElementById('section-reorders').classList.contains('active')) renderReorders();
+        renderOrders();
+      } catch(e) { console.error(e); }
+    }
+
+    // ─── Low-stock / critical alerts ───
+    function belowThreshold(p) { return p.reorder_threshold != null && p.current_stock <= p.reorder_threshold; }
+
+    function updateAlerts() {
+      const criticalLow = products.filter(p => belowThreshold(p) && p.is_critical);
+      const otherLow = products.filter(p => belowThreshold(p) && !p.is_critical);
+
+      // Sidebar badge — count of critical items needing attention right now.
+      const badge = document.getElementById('reorderBadge');
+      if (criticalLow.length) { badge.textContent = criticalLow.length; badge.style.display = ''; }
+      else { badge.style.display = 'none'; }
+
+      // Alert banner on Overview.
+      const banner = document.getElementById('alertBanner');
+      if (!criticalLow.length && !otherLow.length) {
+        banner.innerHTML = '';
+      } else {
+        const rows = [...criticalLow, ...otherLow].map(p => `
+          <div class="alert-item">
+            <div><span class="name">${p.is_critical ? '⚠ ' : ''}${p.name}</span> <span class="text-muted">(${p.sku})</span></div>
+            <div class="flex" style="gap:10px">
+              <span class="stock">${p.current_stock} ${p.unit} left · threshold ${p.reorder_threshold}</span>
+              <button class="btn btn-danger btn-xs" onclick="openReorderModal('${p.id}')">Reorder</button>
+            </div>
+          </div>`).join('');
+        banner.innerHTML = `
+          <div class="alert-banner">
+            <div class="alert-banner-head">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+              ${criticalLow.length ? criticalLow.length + ' critical item' + (criticalLow.length > 1 ? 's' : '') + ' below reorder threshold' : otherLow.length + ' item(s) below reorder threshold'}
+            </div>
+            ${rows}
+          </div>`;
+      }
+
+      // Toast only for critical items newly crossing below threshold this session.
+      const currentIds = new Set(criticalLow.map(p => p.id));
+      criticalLow.forEach(p => {
+        if (!notifiedCriticalIds.has(p.id)) {
+          toast(`⚠ Critical: "${p.name}" is at ${p.current_stock} ${p.unit} (threshold ${p.reorder_threshold})`, 'error');
+        }
+      });
+      notifiedCriticalIds = currentIds;
+    }
+
+    // ─── Dashboard ───
+    function renderDashboard(s) {
+      Chart.getChart('chartCategory')?.destroy();
+      Chart.getChart('chartOrders')?.destroy();
+
+      document.getElementById('kpiCards').innerHTML = `
+        <div class="card"><div class="card-top"><div><div class="label">Total Products</div><div class="value">${s.products.total}</div><div class="sub">${s.products.raw} raw · ${s.products.finished} finished</div></div><div class="card-icon icon-blue"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="20" height="20"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div></div></div>
+        <div class="card"><div class="card-top"><div><div class="label">Stock Value</div><div class="value">₹${money(s.products.stock_value)}</div><div class="sub">${s.products.low_stock} products out of stock</div></div><div class="card-icon icon-green"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="20" height="20"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div></div></div>
+        <div class="card"><div class="card-top"><div><div class="label">B2B Orders</div><div class="value">${s.orders.pending + s.orders.confirmed + s.orders.dispatched}</div><div class="sub">${s.orders.pending} pending · ${s.orders.confirmed} confirmed · ${s.orders.dispatched} dispatched</div></div><div class="card-icon icon-orange"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="20" height="20"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg></div></div></div>
+        <div class="card"><div class="card-top"><div><div class="label">Vendor Jobs</div><div class="value">${s.vendor_jobs.issued + s.vendor_jobs.completed}</div><div class="sub">${s.vendor_jobs.issued} issued · ${s.vendor_jobs.completed} received</div></div><div class="card-icon icon-purple"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="20" height="20"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div></div></div>
+      `;
+
+      const catData = { labels: ['Raw', 'Finished', 'Other'], data: [s.products.raw, s.products.finished, s.products.total - s.products.raw - s.products.finished] };
+      new Chart(document.getElementById('chartCategory'), { type: 'doughnut', data: { labels: catData.labels, datasets: [{ data: catData.data, backgroundColor: ['#f59e0b','#3b82f6','#e2e8f0'], borderWidth: 0 }] }, options: { responsive: true, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { padding: 14, usePointStyle: true } } } } });
+
+      const ordData = { labels: ['Pending','Confirmed','Dispatched'], data: [s.orders.pending, s.orders.confirmed, s.orders.dispatched] };
+      new Chart(document.getElementById('chartOrders'), { type: 'doughnut', data: { labels: ordData.labels, datasets: [{ data: ordData.data, backgroundColor: ['#fef3c7','#dbeafe','#dcfce7'], borderWidth: 0 }] }, options: { responsive: true, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { padding: 14, usePointStyle: true } } } } });
+
+      document.querySelector('#recentTxTable tbody').innerHTML = s.recent_transactions.map(t => `<tr><td>${t.product_name||'-'}</td><td><span class="badge ${t.type==='IN'?'badge-green':'badge-red'}"><span class="badge-dot"></span>${t.type}</span></td><td class="fw-600">${t.quantity}</td><td>${t.reference_type}</td><td class="text-muted">${new Date(t.created_at).toLocaleDateString()}</td></tr>`).join('') || '<tr><td colspan="5" class="empty">No recent transactions</td></tr>';
+      document.querySelector('#recentOrderTable tbody').innerHTML = s.recent_orders.map(o => `<tr><td class="fw-600">${o.customer_name}</td><td><span class="badge ${o.status==='DISPATCHED'?'badge-green':o.status==='CONFIRMED'?'badge-blue':'badge-yellow'}"><span class="badge-dot"></span>${o.status}</span></td><td class="fw-600">₹${money(o.total_amount)}</td><td class="text-muted">${new Date(o.created_at).toLocaleDateString()}</td></tr>`).join('') || '<tr><td colspan="4" class="empty">No recent orders</td></tr>';
+
+      document.querySelector('#overviewProductTable tbody').innerHTML = products.map(p => {
+        const ratio = Math.min(p.current_stock / 500, 1);
+        const barColor = p.current_stock <= 0 ? 'red' : p.current_stock < 50 ? 'yellow' : 'green';
+        return `<tr><td class="fw-600">${p.sku}</td><td>${productNameCell(p)}</td><td>${p.category}</td><td>${p.unit}</td>
+          <td><div class="stock-cell"><span class="fw-600">${p.current_stock}</span><div class="stock-bar"><div class="stock-bar-fill ${barColor}" style="width:${ratio*100}%"></div></div></div></td>
+          <td>₹${money(p.unit_price)}</td>
+          <td>₹${money(p.current_stock * p.unit_price)}</td></tr>`;
+      }).join('') || '<tr><td colspan="7" class="empty">No products</td></tr>';
+    }
+
+    // ─── Products ───
+    function productNameCell(p) {
+      if (!belowThreshold(p)) return p.name;
+      const cls = p.is_critical ? 'badge-red' : 'badge-yellow';
+      const label = p.is_critical ? '⚠ Critical' : 'Low';
+      return `${p.name} <span class="badge ${cls}">${label}</span>`;
+    }
+
+    function renderProducts() {
+      const q = (document.getElementById('productSearch')?.value || '').toLowerCase();
+      const catFilter = document.getElementById('productCategoryFilter')?.value || '';
+      let filtered = products.filter(p => (p.sku.toLowerCase().includes(q) || p.name.toLowerCase().includes(q)));
+      if (catFilter) filtered = filtered.filter(p => p.category === catFilter);
+      document.getElementById('productTableBody').innerHTML = filtered.map(p => {
+        const ratio = Math.min(p.current_stock / 500, 1);
+        const barColor = p.current_stock <= 0 ? 'red' : p.current_stock < 50 ? 'yellow' : 'green';
+        return `<tr>
+          <td class="fw-600">${p.sku}</td><td>${productNameCell(p)}</td><td>${p.category}</td><td>${p.unit}</td>
+          <td><div class="stock-cell"><span class="fw-600">${p.current_stock}</span><div class="stock-bar"><div class="stock-bar-fill ${barColor}" style="width:${ratio*100}%"></div></div></div></td>
+          <td>₹${money(p.unit_price)}</td>
+          <td>₹${money(p.current_stock * p.unit_price)}</td>
+          <td><div class="flex" style="gap:4px"><button class="btn btn-outline btn-xs" onclick="openReorderModal('${p.id}')" title="Send Reorder"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="14" height="14"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m-10 0a2 2 0 100 4 2 2 0 000-4zm10 0a2 2 0 100 4 2 2 0 000-4z"/></svg></button><button class="btn btn-outline btn-xs" onclick="editProduct('${p.id}')" title="Edit"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="14" height="14"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button class="btn btn-outline btn-xs" onclick="deleteProduct('${p.id}')" title="Delete" style="color:var(--danger)"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="14" height="14"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div></td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="8" class="empty"><div style="text-align:center;padding:20px"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="32" height="32" style="margin:0 auto 8px;opacity:.4"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg><br>No products found</div></td></tr>';
+    }
+
+    // ─── Prevent double-submit on slow networks / impatient double-clicks ───
+    async function runOnce(btn, fn) {
+      if (!btn || btn.disabled) return;
+      btn.disabled = true;
+      try { await fn(); } finally { if (btn) btn.disabled = false; }
+    }
+
+    function openAddProductModal() {
+      document.getElementById('pSku').value = '';
+      document.getElementById('pName').value = '';
+      document.getElementById('pCategory').value = '';
+      document.getElementById('pUnit').value = '';
+      document.getElementById('pStock').value = 0;
+      document.getElementById('pPrice').value = 0;
+      document.getElementById('pThreshold').value = '';
+      document.getElementById('pCritical').checked = false;
+      const btn = document.querySelector('#productModal .btn-primary');
+      btn.textContent = 'Save';
+      btn.onclick = () => createProduct(btn);
+      openModal('productModal');
+    }
+
+    async function createProduct(btn) {
+      let valid = true;
+      if (!document.getElementById('pSku').value) { showError('pSku'); markError('pSku'); valid = false; }
+      if (!document.getElementById('pName').value) { showError('pName'); markError('pName'); valid = false; }
+      if (!valid) return;
+      await runOnce(btn, async () => {
+        const threshold = document.getElementById('pThreshold').value;
+        await api('/products', { method:'POST', body: JSON.stringify({
+          sku: document.getElementById('pSku').value,
+          name: document.getElementById('pName').value,
+          category: document.getElementById('pCategory').value,
+          unit: document.getElementById('pUnit').value,
+          current_stock: parseFloat(document.getElementById('pStock').value) || 0,
+          unit_price: parseFloat(document.getElementById('pPrice').value) || 0,
+          is_critical: document.getElementById('pCritical').checked,
+          reorder_threshold: threshold === '' ? null : parseFloat(threshold),
+        }), headers: { 'Content-Type': 'application/json' } });
+        closeModal('productModal'); toast('Product created', 'success'); loadAll();
+      });
+    }
+
+    async function editProduct(id) {
+      const p = products.find(x => x.id === id);
+      if (!p) return;
+      document.getElementById('pSku').value = p.sku;
+      document.getElementById('pName').value = p.name;
+      document.getElementById('pCategory').value = p.category;
+      document.getElementById('pUnit').value = p.unit;
+      document.getElementById('pStock').value = p.current_stock;
+      document.getElementById('pPrice').value = p.unit_price;
+      document.getElementById('pThreshold').value = p.reorder_threshold ?? '';
+      document.getElementById('pCritical').checked = !!p.is_critical;
+      openModal('productModal');
+      // Override save to update instead of create
+      const origBtn = document.querySelector('#productModal .btn-primary');
+      origBtn.textContent = 'Update';
+      origBtn.onclick = () => runOnce(origBtn, async () => {
+        const threshold = document.getElementById('pThreshold').value;
+        await api('/products/' + id, { method:'PUT', body: JSON.stringify({
+          sku: document.getElementById('pSku').value,
+          name: document.getElementById('pName').value,
+          category: document.getElementById('pCategory').value,
+          unit: document.getElementById('pUnit').value,
+          current_stock: p.current_stock, // preserve stock on edit
+          unit_price: parseFloat(document.getElementById('pPrice').value) || 0,
+          is_critical: document.getElementById('pCritical').checked,
+          reorder_threshold: threshold === '' ? null : parseFloat(threshold),
+        }), headers: { 'Content-Type': 'application/json' } });
+        closeModal('productModal'); toast('Product updated', 'success'); loadAll();
+        origBtn.textContent = 'Save';
+        origBtn.onclick = () => createProduct(origBtn);
+      });
+    }
+
+    async function deleteProduct(id) {
+      const p = products.find(x => x.id === id);
+      if (!p) return;
+      if (!confirm(`Delete "${p.name}" (${p.sku})? This cannot be undone.`)) return;
+      await api('/products/' + id, { method: 'DELETE' });
+      toast('Product deleted', 'success');
+      loadAll();
+    }
+
+    async function uploadExcel(ev) {
+      const file = ev.target.files[0]; if (!file) return;
+      const fd = new FormData(); fd.append('file', file);
+      await api('/excel/upload', { method:'POST', body: fd });
+      ev.target.value = ''; toast('Excel uploaded', 'success'); loadAll();
+    }
+
+    // ─── Inventory Transactions ───
+    function renderTransactions() {
+      const filterId = document.getElementById('txFilterProduct').value;
+      const filtered = filterId ? transactions.filter(t => t.product_id === filterId) : transactions;
+      document.getElementById('txTableBody').innerHTML = filtered.map(t => `
+        <tr><td>${t.product_name||'-'}</td>
+        <td><span class="badge ${t.type==='IN'?'badge-green':'badge-red'}"><span class="badge-dot"></span>${t.type}</span></td>
+        <td class="fw-600">${t.quantity}</td><td>${t.reference_type}</td><td style="font-size:12px;color:var(--gray-400)">${(t.reference_id||'-').slice(0,8)}</td>
+        <td class="text-muted">${new Date(t.created_at).toLocaleDateString()}</td>
+        <td>${t.receipt_path ? `<a href="/${t.receipt_path}" target="_blank" class="btn btn-outline btn-xs">View</a>` : '<span class="text-muted">—</span>'}</td></tr>
+      `).join('') || '<tr><td colspan="7" class="empty">No transactions</td></tr>';
+    }
+
+    async function adjustStock(btn) {
+      const qty = parseFloat(document.getElementById('aQty').value);
+      if (!qty || qty <= 0) { showError('aQty'); markError('aQty'); return; }
+      await runOnce(btn, async () => {
+        const fd = new FormData();
+        fd.append('product_id', document.getElementById('aProduct').value);
+        fd.append('type', document.getElementById('aType').value);
+        fd.append('quantity', qty);
+        fd.append('notes', document.getElementById('aNotes').value);
+        const rec = document.getElementById('aReceipt').files[0];
+        if (rec) fd.append('receipt', rec);
+        await api('/inventory/adjust', { method:'POST', body: fd });
+        closeModal('adjustModal'); toast('Stock adjusted', 'success'); loadAll();
+      });
+    }
+
+    // ─── Vendor Job Work ───
+    function renderVendorJobs() {
+      document.getElementById('vendorTableBody').innerHTML = vendorJobs.map(j => `
+        <tr>
+          <td class="fw-600">${j.vendor_name}</td>
+          <td style="font-size:12px">${(j.raw_items||[]).map(i => `${i.product_name||'?'}<span class="text-muted"> ×${i.quantity}</span>`).join(', ')||'-'}</td>
+          <td style="font-size:12px">${(j.finished_items||[]).map(i => `${i.product_name||'?'}<span class="text-muted"> ×${i.quantity}</span>`).join(', ')||'-'}</td>
+          <td><span class="badge ${j.status==='COMPLETED'?'badge-green':'badge-yellow'}"><span class="badge-dot"></span>${j.status}</span></td>
+          <td class="text-muted">${new Date(j.issued_at).toLocaleDateString()}</td>
+          <td>${j.status !== 'COMPLETED' ? `<button class="btn btn-primary btn-xs" onclick="openReceiveModal('${j.id}','${j.vendor_name}')">Receive</button>` : '<span class="badge badge-green">Done</span>'}</td>
+        </tr>`).join('') || '<tr><td colspan="6" class="empty">No vendor jobs</td></tr>';
+    }
+
+    function addViRow() {
+      const row = document.querySelector('.vi-row').cloneNode(true);
+      row.querySelector('.vi-qty').value = '';
+      document.getElementById('viItemsContainer').appendChild(row);
+      populateSelect(row.querySelector('.vi-product'));
+    }
+
+    async function vendorIssue(btn) {
+      if (!document.getElementById('viVendorName').value) { showError('viVendorName'); markError('viVendorName'); return; }
+      const rawItems = [];
+      document.querySelectorAll('.vi-row').forEach(row => {
+        const pid = row.querySelector('.vi-product').value;
+        const qty = parseFloat(row.querySelector('.vi-qty').value);
+        if (pid && qty) rawItems.push({ product_id: pid, quantity: qty });
+      });
+      if (!rawItems.length) { toast('Add at least one raw material', 'error'); return; }
+      await runOnce(btn, async () => {
+        await api('/vendor/issue', { method:'POST', body: JSON.stringify({
+          vendor_name: document.getElementById('viVendorName').value,
+          raw_items: rawItems, notes: document.getElementById('viNotes').value,
+        }), headers: { 'Content-Type': 'application/json' } });
+        closeModal('vendorIssueModal'); toast('Issued to vendor', 'success'); loadAll();
+      });
+    }
+
+    let receiveJobId = null;
+    function openReceiveModal(jobId, vendorName) {
+      receiveJobId = jobId;
+      document.getElementById('vrJobInfo').innerHTML = `<strong>Receiving from:</strong> ${vendorName}`;
+      openModal('vendorReceiveModal');
+    }
+
+    async function vendorReceive(btn) {
+      await runOnce(btn, async () => {
+        const fd = new FormData();
+        fd.append('product_id', document.getElementById('vrProduct').value);
+        fd.append('quantity', parseFloat(document.getElementById('vrQty').value) || 0);
+        const rec = document.getElementById('vrReceipt').files[0];
+        if (rec) fd.append('receipt', rec);
+        await api(`/vendor/${receiveJobId}/receive`, { method:'POST', body: fd });
+        closeModal('vendorReceiveModal'); toast('Goods received from vendor', 'success'); loadAll();
+      });
+    }
+
+    // ─── Reorder Requests ───
+    function renderReorders() {
+      document.getElementById('reorderTableBody').innerHTML = reorders.map(r => `
+        <tr>
+          <td class="fw-600">${r.product_name || '?'}<br><span class="text-muted">${r.product_sku || ''}</span></td>
+          <td>${r.supplier_name || '<span class="text-muted">—</span>'}</td>
+          <td class="fw-600">${r.quantity}</td>
+          <td><span class="badge ${r.status==='RECEIVED'?'badge-green':'badge-yellow'}"><span class="badge-dot"></span>${r.status}</span></td>
+          <td class="text-muted">${new Date(r.created_at).toLocaleDateString()}</td>
+          <td>${r.receipt_path ? `<a href="/${r.receipt_path}" target="_blank" class="btn btn-outline btn-xs">View</a>` : '<span class="text-muted">—</span>'}</td>
+          <td>${r.status !== 'RECEIVED' ? `<button class="btn btn-primary btn-xs" onclick="openReceiveReorderModal('${r.id}','${(r.product_name||'').replace(/'/g,"\\'")}')">Receive</button>` : '<span class="badge badge-green">Done</span>'}</td>
+        </tr>`).join('') || '<tr><td colspan="7" class="empty">No reorder requests yet</td></tr>';
+    }
+
+    function openReorderModal(productId) {
+      document.getElementById('roQty').value = '';
+      document.getElementById('roSupplier').value = '';
+      document.getElementById('roNotes').value = '';
+      clearError('roProduct'); clearError('roQty');
+      unmarkError('roProduct'); unmarkError('roQty');
+      populateSelect(document.getElementById('roProduct'));
+      if (productId) {
+        document.getElementById('roProduct').value = productId;
+        const p = products.find(x => x.id === productId);
+        if (p && p.reorder_threshold != null) {
+          // Suggest restocking to roughly double the threshold.
+          document.getElementById('roQty').value = Math.max(p.reorder_threshold * 2 - p.current_stock, p.reorder_threshold);
+        }
+      }
+      openModal('reorderModal');
+    }
+
+    async function sendReorder(btn) {
+      let valid = true;
+      const productId = document.getElementById('roProduct').value;
+      const qty = parseFloat(document.getElementById('roQty').value);
+      if (!productId) { showError('roProduct'); markError('roProduct'); valid = false; }
+      if (!qty || qty <= 0) { showError('roQty'); markError('roQty'); valid = false; }
+      if (!valid) return;
+      await runOnce(btn, async () => {
+        await api('/reorder', { method:'POST', body: JSON.stringify({
+          product_id: productId,
+          quantity: qty,
+          supplier_name: document.getElementById('roSupplier').value || null,
+          notes: document.getElementById('roNotes').value || null,
+        }), headers: { 'Content-Type': 'application/json' } });
+        closeModal('reorderModal'); toast('Reorder request sent', 'success'); loadAll();
+      });
+    }
+
+    let receiveReorderId = null;
+    function openReceiveReorderModal(reorderId, productName) {
+      receiveReorderId = reorderId;
+      document.getElementById('receiveReorderInfo').innerHTML = `<strong>Receiving:</strong> ${productName}`;
+      document.getElementById('rrQty').value = '';
+      document.getElementById('rrReceipt').value = '';
+      openModal('receiveReorderModal');
+    }
+
+    async function receiveReorderSubmit(btn) {
+      const qty = parseFloat(document.getElementById('rrQty').value);
+      if (!qty || qty <= 0) return;
+      await runOnce(btn, async () => {
+        const fd = new FormData();
+        fd.append('quantity', qty);
+        const rec = document.getElementById('rrReceipt').files[0];
+        if (rec) fd.append('receipt', rec);
+        await api(`/reorder/${receiveReorderId}/receive`, { method:'POST', body: fd });
+        closeModal('receiveReorderModal'); toast('Reorder received, stock updated', 'success'); loadAll();
+      });
+    }
+
+    // ─── B2B Orders ───
+    function renderOrders() {
+      document.getElementById('orderTableBody').innerHTML = orders.map(o => `
+        <tr>
+          <td><span class="fw-600">${o.customer_name}</span>${o.customer_phone?'<br><span style="font-size:11px;color:var(--gray-400)">'+o.customer_phone+'</span>':''}</td>
+          <td style="font-size:12px">${(o.items||[]).map(i => `${i.product_name||'?'}<span class="text-muted"> ×${i.quantity}</span>`).join(', ')||'-'}</td>
+          <td class="fw-600">₹${money(o.total_amount)}</td>
+          <td><span class="badge ${o.status==='DISPATCHED'?'badge-green':o.status==='CONFIRMED'?'badge-blue':'badge-yellow'}"><span class="badge-dot"></span>${o.status}</span></td>
+          <td class="text-muted">${new Date(o.created_at).toLocaleDateString()}</td>
+          <td>${o.status === 'PENDING' ? `<button class="btn btn-primary btn-xs" onclick="confirmOrder('${o.id}', this)">Confirm</button>` : o.status === 'CONFIRMED' ? `<button class="btn btn-success btn-xs" onclick="dispatchOrder('${o.id}')">Dispatch</button>` : '<span class="badge badge-green">Shipped</span>'}</td>
+        </tr>`).join('') || '<tr><td colspan="6" class="empty">No orders</td></tr>';
+    }
+
+    let dispatchOrderId = null;
+    async function confirmOrder(id, btn) {
+      await runOnce(btn, async () => {
+        await api(`/b2b/order/${id}/confirm`, { method:'POST' });
+        toast('Order confirmed', 'success'); loadAll();
+      });
+    }
+    function dispatchOrder(id) {
+      dispatchOrderId = id;
+      const order = orders.find(o => o.id === id);
+      document.getElementById('dispatchInfo').innerHTML = `<strong>Dispatching order for:</strong> ${order?.customer_name || id}`;
+      document.getElementById('dispatchReceipt').value = '';
+      openModal('dispatchModal');
+    }
+    async function doDispatch(btn) {
+      await runOnce(btn, async () => {
+        const fd = new FormData();
+        const rec = document.getElementById('dispatchReceipt').files[0];
+        if (rec) fd.append('receipt', rec);
+        await api(`/b2b/order/${dispatchOrderId}/dispatch`, { method:'POST', body: fd });
+        closeModal('dispatchModal'); toast('Order dispatched', 'success'); loadAll();
+      });
+    }
+
+    async function createOrder(btn) {
+      let valid = true;
+      if (!document.getElementById('oCustName').value) { showError('oCustName'); markError('oCustName'); valid = false; }
+      if (!valid) return;
+      const items = [];
+      document.querySelectorAll('.order-item-row').forEach(row => {
+        const pid = row.querySelector('.oi-product').value;
+        const qty = parseFloat(row.querySelector('.oi-qty').value);
+        const price = parseFloat(row.querySelector('.oi-price').value);
+        if (pid && qty && price) items.push({ product_id: pid, quantity: qty, unit_price: price });
+      });
+      if (!items.length) { toast('Add at least one order item', 'error'); return; }
+      await runOnce(btn, async () => {
+        await api('/b2b/order', { method:'POST', body: JSON.stringify({
+          customer_name: document.getElementById('oCustName').value,
+          customer_phone: document.getElementById('oCustPhone').value,
+          items, notes: document.getElementById('oNotes').value,
+        }), headers: { 'Content-Type': 'application/json' } });
+        closeModal('orderModal'); toast('Order created', 'success'); loadAll();
+      });
+    }
+
+    function addOrderItemRow() {
+      const row = document.querySelector('.order-item-row').cloneNode(true);
+      row.querySelector('.oi-qty').value = ''; row.querySelector('.oi-price').value = '';
+      document.getElementById('orderItemsContainer').appendChild(row);
+      populateSelect(row.querySelector('.oi-product'));
+    }
+
+    // ─── Populate selects ───
+    function populateSelects() {
+      document.querySelectorAll('.vi-product').forEach(el => populateSelect(el));
+      document.querySelectorAll('.oi-product').forEach(el => populateSelect(el));
+      ['aProduct', 'vrProduct', 'txFilterProduct', 'roProduct'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) populateSelect(el);
+      });
+      // Category filter
+      const catFilter = document.getElementById('productCategoryFilter');
+      if (catFilter) {
+        const cats = [...new Set(products.map(p => p.category))].sort();
+        const cur = catFilter.value;
+        catFilter.innerHTML = '<option value="">All Categories</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('');
+        if (cur) catFilter.value = cur;
+      }
+    }
+
+    function populateSelect(el, customList) {
+      const list = customList || products;
+      const current = el.value;
+      el.innerHTML = '<option value="">— Select —</option>' + list.map(p => `<option value="${p.id}">${p.sku} — ${p.name} (${p.current_stock} ${p.unit})</option>`).join('');
+      if (current) el.value = current;
+    }
+
+    // ─── Reports ───
+    async function loadReports() {
+      try {
+        const data = await api('/reports');
+        reports = data;
+        renderReports();
+      } catch(e) {}
+    }
+
+    function renderReports() {
+      document.getElementById('reportTableBody').innerHTML = reports.map(r => {
+        const s = r.summary || {};
+        return `<tr>
+          <td class="fw-600">${r.date}</td>
+          <td>${s.products_added || 0}</td>
+          <td class="fw-600" style="color:var(--success)">${(s.transactions && s.transactions.in) || 0}</td>
+          <td class="fw-600" style="color:var(--danger)">${(s.transactions && s.transactions.out) || 0}</td>
+          <td>${(s.orders && s.orders.dispatched) || 0} dispatched / ${(s.orders && s.orders.pending) || 0} pending</td>
+          <td>${(s.vendor_jobs && s.vendor_jobs.issued) || 0} issued / ${(s.vendor_jobs && s.vendor_jobs.completed) || 0} received</td>
+          <td>${s.products_in_stock || 0}</td>
+          <td><button class="btn btn-outline btn-xs" onclick="showReportDetail('${r.id}')">View</button></td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="8" class="empty">No reports yet</td></tr>';
+    }
+
+    function showReportDetail(reportId) {
+      const r = reports.find(x => x.id === reportId);
+      if (!r) return;
+      const s = r.summary || {};
+      let html = `<div class="report-detail" style="padding:16px;background:var(--gray-50);border-radius:10px;margin:8px 0">`;
+      html += `<h4 style="margin-bottom:12px;font-size:15px">Report for ${r.date}</h4>`;
+      html += `<div class="cards">`;
+      html += `<div class="card"><div class="label">Products Added</div><div class="value" style="font-size:20px">${s.products_added||0}</div></div>`;
+      html += `<div class="card"><div class="label">Stock In</div><div class="value" style="font-size:20px;color:var(--success)">${(s.transactions&&s.transactions.in)||0}</div></div>`;
+      html += `<div class="card"><div class="label">Stock Out</div><div class="value" style="font-size:20px;color:var(--danger)">${(s.transactions&&s.transactions.out)||0}</div></div>`;
+      html += `<div class="card"><div class="label">Orders Dispatched</div><div class="value" style="font-size:20px">${(s.orders&&s.orders.dispatched)||0}</div></div>`;
+      html += `<div class="card"><div class="label">Vendor Jobs</div><div class="value" style="font-size:20px">${(s.vendor_jobs&&s.vendor_jobs.completed)||0}</div></div>`;
+      html += `</div>`;
+      if (s.stock_snapshot && s.stock_snapshot.length) {
+        html += `<h4 style="margin:12px 0 8px;font-size:13px;color:var(--gray-600)">Stock Snapshot (${s.stock_snapshot.length} items)</h4>`;
+        html += `<div style="max-height:240px;overflow-y:auto;border:1px solid var(--gray-200);border-radius:8px"><table style="font-size:12px"><thead><tr><th>SKU</th><th>Name</th><th>Stock</th><th>Unit</th></tr></thead><tbody>`;
+        html += s.stock_snapshot.map(p => `<tr><td>${p.sku}</td><td>${p.name}</td><td class="fw-600">${p.stock}</td><td>${p.unit}</td></tr>`).join('');
+        html += `</tbody></table></div>`;
+      }
+      html += `</div>`;
+      const existing = document.getElementById('reportDetailOverlay');
+      if (existing) existing.remove();
+      const overlay = document.createElement('div');
+      overlay.id = 'reportDetailOverlay';
+      overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,.5);z-index:1000;display:flex;justify-content:center;align-items:center;backdrop-filter:blur(2px)';
+      overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+      const box = document.createElement('div');
+      box.style.cssText = 'background:#fff;border-radius:14px;padding:24px;width:90%;max-width:700px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:modalIn .2s';
+      box.innerHTML = html + '<div style="margin-top:16px;text-align:right"><button class="btn btn-outline btn-sm" onclick="this.parentElement.parentElement.parentElement.remove()">Close</button></div>';
+      overlay.appendChild(box);
+      document.body.appendChild(overlay);
+    }
+
+    async function dayEnd() {
+      if (!confirm('End the day and generate report? This can only be done once per day.')) return;
+      document.getElementById('dayEndBtn').disabled = true;
+      document.getElementById('dayEndBtn').innerHTML = '<span class="shimmer" style="display:inline-block;width:16px;height:16px;border-radius:50%;margin-right:6px"></span> Generating...';
+      try {
+        const result = await api('/reports/day-end', { method:'POST' });
+        document.getElementById('reportStatus').textContent = `Report for ${result.date} generated`;
+        toast('Daily report generated', 'success');
+        loadReports(); loadAll();
+      } catch(e) {
+        document.getElementById('reportStatus').textContent = 'Failed to generate report';
+      }
+      document.getElementById('dayEndBtn').disabled = false;
+      document.getElementById('dayEndBtn').innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> End Day & Generate Report';
+    }
+
+    async function showTodayPreview() {
+      try {
+        const data = await api('/reports/today/preview');
+        const s = data.summary;
+        const el = document.getElementById('todayPreview');
+        el.style.display = 'block';
+        el.querySelector('#todayPreviewContent').innerHTML = `
+          <div class="cards" style="margin-top:12px">
+            <div class="card"><div class="label">Products Added</div><div class="value" style="font-size:20px">${s.products_added}</div></div>
+            <div class="card"><div class="label">Stock In</div><div class="value" style="font-size:20px;color:var(--success)">${s.transactions.in}</div></div>
+            <div class="card"><div class="label">Stock Out</div><div class="value" style="font-size:20px;color:var(--danger)">${s.transactions.out}</div></div>
+            <div class="card"><div class="label">Orders</div><div class="value" style="font-size:20px">${s.orders.total} (${s.orders.dispatched} dispatched)</div></div>
+            <div class="card"><div class="label">Vendor Jobs</div><div class="value" style="font-size:20px">${s.vendor_jobs.issued} issued / ${s.vendor_jobs.completed} received</div></div>
+            <div class="card"><div class="label">Stock Items</div><div class="value" style="font-size:20px">${s.products_in_stock}</div></div>
+          </div>
+        `;
+      } catch(e) { toast('Could not load preview', 'error'); }
+    }
+
+    // ─── Init ───
+    // Polling pauses while the tab is in the background so an idle browser tab
+    // doesn't keep hitting the API/DB every 30s for no one to see.
+    let pollTimer = null, reportsTimer = null;
+    function startPolling() {
+      if (!pollTimer) pollTimer = setInterval(loadAll, 30000);
+      if (!reportsTimer) reportsTimer = setInterval(loadReports, 60000);
+    }
+    function stopPolling() {
+      clearInterval(pollTimer); pollTimer = null;
+      clearInterval(reportsTimer); reportsTimer = null;
+    }
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) { stopPolling(); }
+      else if (!document.getElementById('loginOverlay').classList.contains('show')) {
+        loadAll(); loadReports(); startPolling();
+      }
+    });
+
+    checkAuthAndInit();
+  </script>
+</body>
+</html>
