@@ -5,6 +5,6 @@ __pycache__/
 venv/
 receipts/*
 !receipts/.gitkeep
-db_backups/
 *.db
 .backup_*/
+db_backups/

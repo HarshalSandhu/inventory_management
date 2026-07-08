@@ -13,7 +13,7 @@ except ImportError:
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "mysql+pymysql://root@localhost/inventory_management?charset=utf8mb4",
+    "sqlite:///./inventory.db",
 )
 
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "receipts")

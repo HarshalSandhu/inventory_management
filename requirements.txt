@@ -3,5 +3,4 @@ uvicorn[standard]
 sqlalchemy
 python-multipart
 openpyxl
-pymysql
-python-dotenv
+a2wsgi
